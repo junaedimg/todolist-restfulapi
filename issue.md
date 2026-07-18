@@ -1,63 +1,89 @@
-## Issue: Review & Perbaikan OpenAPI Spec User
+## Issue: Todo API — Migration & OpenAPI Spec
 
 ### Deskripsi
-Melakukan review terhadap `docs/user-api.yaml` dan mencocokkan dengan database migration yang ada. Ditemukan beberapa ketidaksesuaian dan kekurangan pada spec.
+Menambahkan fitur CRUD Todo yang meliputi migration table dan OpenAPI spec.
 
 ---
 
 ### Masalah
-
-**1. Request/Response tidak sesuai database**
-- Spec pake `username` tapi DB cuma punya `email` — login gak bisa jalan
-- Response user cuma `username` + `name` — padahal DB punya `id`, `email`, `created_at`, `updated_at`
-- Register tidak menerima `email` — padahal column `email` di DB required
-
-**2. Endpoint tidak lengkap**
-- Tidak ada endpoint untuk update profile
-- Logout pake `DELETE`, seharusnya `POST` (logout bukan hapus resource)
-
-**3. Struktur OpenAPI tidak standar**
-- Auth pake parameter `Authorization` manual di tiap endpoint — harusnya pakai `securitySchemes`
-- Ada wrapper schema `DataUserResponse`, `TokenResponse`, `MessageResponse` yang tidak perlu
-- `bearerFormat: JWT` tidak sesuai (Laravel Sanctum pake token biasa)
-
-**4. Response error tidak lengkap**
-- Login cuma punya response `400` — kalau password salah harusnya `401`
+- Belum ada table `todos` di database
+- Belum ada dokumentasi API untuk fitur Todo
 
 ---
 
 ### Solusi
 
-**A. Database — tambah kolom `username`**
-File: `database/migrations/0001_01_01_000000_create_users_table.php`
+**A. Database — buat table `todos`**
 
-```php
-$table->string('username')->unique()->after('name');
+File: `database/migrations/0001_01_01_000003_create_todos_table.php`
+
+| Column | Type | Constraints |
+|---|---|---|
+| id | bigIncrements | Primary Key |
+| user_id | foreignId | `constrained()->cascadeOnDelete()` |
+| title | string | Required |
+| description | text | Nullable |
+| is_completed | boolean | Default false |
+| created_at | timestamp | |
+| updated_at | timestamp | |
+
+Relasi: Setiap todo dimiliki oleh satu user (`user_id → users.id`). Jika user dihapus, semua todo-nya ikut terhapus (cascadeOnDelete).
+
+**B. OpenAPI Spec — `docs/todo-api.yaml`**
+
+Semua endpoint memerlukan autentikasi Bearer Token.
+
+### Endpoints
+
+| Method | Path | Deskripsi |
+|---|---|---|
+| `GET` | `/api/todos` | List semua todo milik user yang login |
+| `POST` | `/api/todos` | Buat todo baru (title required, description optional) |
+| `GET` | `/api/todos/{id}` | Detail todo berdasarkan ID |
+| `PATCH` | `/api/todos/{id}` | Update title, description, atau is_completed |
+| `DELETE` | `/api/todos/{id}` | Hapus todo |
+
+### Response Codes
+
+| Code | Keterangan |
+|---|---|
+| 200 | Success (list, detail, update, delete) |
+| 201 | Created (create) |
+| 400 | Validation error |
+| 401 | Unauthorized |
+| 404 | Todo tidak ditemukan |
+
+### Schema
+
+**CreateTodoRequest:**
+```json
+{
+    "title": "Belajar Laravel",
+    "description": "Mempelajari RESTful API dengan Laravel"
+}
 ```
 
-**B. OpenAPI Spec — rewrite total**
-- Semua schema disesuaikan dengan DB (`id`, `username`, `email`, `name`, `created_at`, `updated_at`)
-- Auth pakai `securitySchemes: BearerAuth`
-- Wrapper schema dihapus, di-inline di response path
-- Logout ganti `DELETE` → `POST`
-- Login tambah response `401`
+**UpdateTodoRequest:**
+```json
+{
+    "title": "Belajar Laravel Lanjutan",
+    "description": "Mempelajari Eloquent ORM",
+    "is_completed": true
+}
+```
 
----
-
-### Endpoints Final
-
-| Method | Path | Auth | Deskripsi |
-|---|---|---|---|
-| `POST` | `/api/register` | No | Register (name, username, email, password) |
-| `POST` | `/api/login` | No | Login (login field + password) — 401 jika gagal |
-| `POST` | `/api/users/logout` | Bearer | Logout |
-| `GET` | `/api/users/current` | Bearer | Get current user |
-| `PATCH` | `/api/users/current` | Bearer | Update profile (name, username, email) |
-
-### Flow Login
-Request `{ "login": "...", "password": "..." }`
-- Jika `login` mengandung `@` → cari by `email`
-- Selain itu → cari by `username`
+**TodoResponse:**
+```json
+{
+    "id": 1,
+    "user_id": 1,
+    "title": "Belajar Laravel",
+    "description": "Mempelajari RESTful API dengan Laravel",
+    "is_completed": false,
+    "created_at": "2026-07-18T12:00:00Z",
+    "updated_at": "2026-07-18T12:00:00Z"
+}
+```
 
 ---
 
@@ -65,7 +91,6 @@ Request `{ "login": "...", "password": "..." }`
 
 | File | Perubahan |
 |---|---|
-| `database/migrations/0001_01_01_000000_create_users_table.php` | Tambah kolom `username` |
-| `docs/user-api.yaml` | Rewrite total |
-| `docs/user-api.json` | Rewrite total (sinkron dengan YAML) |
-| `README.md` | Update sesuai perubahan |
+| `database/migrations/0001_01_01_000003_create_todos_table.php` | Baru — create table todos |
+| `docs/todo-api.yaml` | Baru — dokumentasi API Todo |
+| `docs/todolist-api.json` | Baru — JSON version dari todo-api.yaml |

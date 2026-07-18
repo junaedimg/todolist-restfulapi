@@ -1,0 +1,291 @@
+openapi: 3.1.1
+info:
+  title: Todo API
+  version: "1.0"
+  description: API untuk manajemen todo (CRUD)
+servers:
+  - url: http://localhost:8000
+    description: Local Development
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    CreateTodoRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          description: Judul todo
+          example: "Belajar Laravel"
+        description:
+          type: string
+          description: Deskripsi todo (opsional)
+          example: "Mempelajari RESTful API dengan Laravel"
+    UpdateTodoRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Judul todo baru
+          example: "Belajar Laravel Lanjutan"
+        description:
+          type: string
+          description: Deskripsi todo baru
+          example: "Mempelajari Eloquent ORM lebih dalam"
+        is_completed:
+          type: boolean
+          description: Status selesai
+          example: true
+    TodoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID todo
+          example: 1
+        user_id:
+          type: integer
+          description: ID pemilik todo
+          example: 1
+        title:
+          type: string
+          description: Judul todo
+          example: "Belajar Laravel"
+        description:
+          type: string
+          nullable: true
+          description: Deskripsi todo
+          example: "Mempelajari RESTful API dengan Laravel"
+        is_completed:
+          type: boolean
+          description: Status selesai
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          description: Tanggal dibuat
+          example: "2026-07-18T12:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Tanggal diperbarui
+          example: "2026-07-18T12:00:00Z"
+    ErrorResponse:
+      type: object
+      properties:
+        errors:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Unauthorized"
+    ValidationErrorResponse:
+      type: object
+      properties:
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+    NotFoundResponse:
+      type: object
+      properties:
+        errors:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Todo not found"
+security:
+  - BearerAuth: []
+paths:
+  /api/todos:
+    get:
+      operationId: listTodos
+      summary: Mendapatkan daftar todo
+      description: Mengembalikan semua todo milik user yang sedang login
+      tags:
+        - Todo
+      responses:
+        "200":
+          description: Daftar todo ditemukan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TodoResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      operationId: createTodo
+      summary: Membuat todo baru
+      description: Menambahkan todo baru untuk user yang sedang login
+      tags:
+        - Todo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTodoRequest"
+      responses:
+        "201":
+          description: Todo berhasil dibuat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/TodoResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/todos/{id}:
+    get:
+      operationId: getTodo
+      summary: Mendapatkan detail todo
+      description: Mengembalikan detail todo berdasarkan ID
+      tags:
+        - Todo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID todo
+      responses:
+        "200":
+          description: Detail todo ditemukan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/TodoResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Todo tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundResponse"
+
+    patch:
+      operationId: updateTodo
+      summary: Memperbarui todo
+      description: Memperbarui title, description, atau is_completed todo
+      tags:
+        - Todo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID todo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTodoRequest"
+      responses:
+        "200":
+          description: Todo berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/TodoResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Todo tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundResponse"
+
+    delete:
+      operationId: deleteTodo
+      summary: Menghapus todo
+      description: Menghapus todo berdasarkan ID
+      tags:
+        - Todo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID todo
+      responses:
+        "200":
+          description: Todo berhasil dihapus
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Todo deleted"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Todo tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFoundResponse"
