@@ -28,7 +28,9 @@ RESTful API sederhana untuk mengelola data Todo. Dibangun menggunakan Laravel se
 ## Tech Stack
 
 - **Backend:** Laravel 13
-- **Database:** MySQL / PostgreSQL / SQLite
+- **Database:** SQLite (default) / MySQL / PostgreSQL
+- **Auth:** Laravel Sanctum (Bearer Token)
+- **Frontend:** Bootstrap 5 + Vanilla JS (single-page)
 
 ## Database
 
@@ -66,6 +68,21 @@ Relasi: Setiap todo dimiliki oleh satu user. Jika user dihapus, semua todo-nya i
 |---|---|
 | `0001_01_01_000000_create_users_table.php` | Users, password reset tokens, sessions |
 | `0001_01_01_000003_create_todos_table.php` | Todos |
+| `2026_07_18_134648_create_personal_access_tokens_table.php` | Token Sanctum |
+
+## Frontend (Single-Page UI)
+
+Akses `http://localhost:8000/` di browser untuk UI lengkap:
+
+| Fitur | Cara Pakai |
+|---|---|
+| Register | Tab Register, isi form, klik Register |
+| Login | Tab Login, isi username/email + password |
+| Tambah Todo | Isi judul + deskripsi, klik Tambah |
+| Selesai / Batal | Centang / uncentang checkbox |
+| Edit Todo | Klik ikon ✏, isi prompt |
+| Hapus Todo | Klik ikon ✕, konfirmasi |
+| Edit Profil | Klik "Edit Profil", ubah data, Simpan |
 
 ## API Documentation
 
@@ -210,3 +227,43 @@ Semua endpoint kecuali `/api/register` dan `/api/login` memerlukan Bearer Token.
 ```http
 Authorization: Bearer <token>
 ```
+
+## Getting Started
+
+### 1. Clone & Install
+
+```bash
+git clone <repo-url>
+cd todolist-restfulapi
+composer install
+```
+
+### 2. Environment
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+### 3. Database (SQLite default)
+
+```bash
+php artisan migrate --force
+```
+
+### 4. Jalankan Server
+
+```bash
+php artisan serve
+```
+
+Buka `http://localhost:8000` — UI siap digunakan.
+
+### 5. Testing API (Postman)
+
+Import file dari folder `docs/` ke Postman / Swagger Editor:
+
+| File | Kegunaan |
+|---|---|
+| `docs/user-api.yaml` | API User |
+| `docs/todo-api.yaml` | API Todo |
