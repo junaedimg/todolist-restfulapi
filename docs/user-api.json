@@ -3,7 +3,7 @@
     "info": {
         "title": "User API",
         "version": "1.0",
-        "description": "API terkait user"
+        "description": "API untuk manajemen user (register, login, logout, profile)"
     },
     "servers": [
         {
@@ -11,41 +11,180 @@
             "description": "Local Development"
         }
     ],
+    "components": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer"
+            }
+        },
+        "schemas": {
+            "RegisterRequest": {
+                "type": "object",
+                "required": ["name", "username", "email", "password"],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Nama lengkap user",
+                        "example": "Jojo Bizarre"
+                    },
+                    "username": {
+                        "type": "string",
+                        "description": "Username untuk login",
+                        "example": "jojobizarre"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Alamat email untuk login",
+                        "example": "jojo@example.com"
+                    },
+                    "password": {
+                        "type": "string",
+                        "format": "password",
+                        "description": "Password minimal 8 karakter",
+                        "example": "rahasia123"
+                    }
+                }
+            },
+            "LoginRequest": {
+                "type": "object",
+                "required": ["login", "password"],
+                "properties": {
+                    "login": {
+                        "type": "string",
+                        "description": "Username atau email",
+                        "example": "jojobizarre"
+                    },
+                    "password": {
+                        "type": "string",
+                        "format": "password",
+                        "description": "Password user",
+                        "example": "rahasia123"
+                    }
+                }
+            },
+            "UpdateUserRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Nama lengkap user",
+                        "example": "Jojo Bizarre Updated"
+                    },
+                    "username": {
+                        "type": "string",
+                        "description": "Username baru",
+                        "example": "jojobizarre2"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Email baru",
+                        "example": "jojo2@example.com"
+                    }
+                }
+            },
+            "UserResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "ID user",
+                        "example": 1
+                    },
+                    "username": {
+                        "type": "string",
+                        "description": "Username user",
+                        "example": "jojobizarre"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Email user",
+                        "example": "jojo@example.com"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "Nama lengkap user",
+                        "example": "Jojo Bizarre"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Tanggal dibuat",
+                        "example": "2026-07-18T12:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Tanggal diperbarui",
+                        "example": "2026-07-18T12:00:00Z"
+                    }
+                }
+            },
+            "ErrorResponse": {
+                "type": "object",
+                "properties": {
+                    "errors": {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string",
+                                "example": "Unauthorized"
+                            }
+                        }
+                    }
+                }
+            },
+            "ValidationErrorResponse": {
+                "type": "object",
+                "properties": {
+                    "errors": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "security": [
+        {
+            "BearerAuth": []
+        }
+    ],
     "paths": {
         "/api/register": {
             "post": {
                 "operationId": "registerUser",
-                "summary": "Untuk registrasi user",
-                "description": "Untuk registrasi user",
+                "summary": "Registrasi user baru",
+                "description": "Mendaftarkan user baru dengan name, username, email, dan password",
                 "tags": ["User"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/UserRegister"
+                                "$ref": "#/components/schemas/RegisterRequest"
                             }
                         }
                     }
                 },
                 "responses": {
                     "201": {
-                        "description": "Success register user",
+                        "description": "Registrasi berhasil",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object",
-                                            "properties": {
-                                                "username": {
-                                                    "type": "string"
-                                                },
-                                                "name": {
-                                                    "type": "string"
-                                                }
-                                            }
+                                            "$ref": "#/components/schemas/UserResponse"
                                         }
                                     }
                                 }
@@ -62,28 +201,29 @@
                             }
                         }
                     }
-                }
+                },
+                "security": []
             }
         },
         "/api/login": {
             "post": {
                 "operationId": "userLogin",
-                "summary": "Untuk login user",
-                "description": "Untuk login user",
+                "summary": "Login user",
+                "description": "Login menggunakan username atau email + password",
                 "tags": ["User"],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/UserLogin"
+                                "$ref": "#/components/schemas/LoginRequest"
                             }
                         }
                     }
                 },
                 "responses": {
                     "200": {
-                        "description": "Login success",
+                        "description": "Login berhasil",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -93,7 +233,9 @@
                                             "type": "object",
                                             "properties": {
                                                 "token": {
-                                                    "type": "string"
+                                                    "type": "string",
+                                                    "description": "Bearer token",
+                                                    "example": "1|abc123def456..."
                                                 }
                                             }
                                         }
@@ -111,36 +253,43 @@
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Username/email atau password salah",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
                     }
-                }
+                },
+                "security": []
             }
         },
         "/api/users/logout": {
-            "delete": {
+            "post": {
                 "operationId": "userLogout",
-                "summary": "Logout current user",
-                "description": "Logout current user",
+                "summary": "Logout user",
+                "description": "Menghapus token saat ini (logout)",
                 "tags": ["User"],
-                "parameters": [
-                    {
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
-                        "description": "Logout success",
+                        "description": "Logout berhasil",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "string"
+                                            "type": "object",
+                                            "properties": {
+                                                "message": {
+                                                    "type": "string",
+                                                    "example": "Logout success"
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -163,37 +312,19 @@
         "/api/users/current": {
             "get": {
                 "operationId": "getCurrentUser",
-                "summary": "Untuk mendapatkan data user",
-                "description": "Untuk mendapatkan data user",
+                "summary": "Mendapatkan data user saat ini",
+                "description": "Mengembalikan profile user yang sedang login",
                 "tags": ["User"],
-                "parameters": [
-                    {
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
-                        "description": "Success get user",
+                        "description": "Data user ditemukan",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "object",
-                                            "properties": {
-                                                "username": {
-                                                    "type": "string"
-                                                },
-                                                "name": {
-                                                    "type": "string"
-                                                }
-                                            }
+                                            "$ref": "#/components/schemas/UserResponse"
                                         }
                                     }
                                 }
@@ -211,60 +342,55 @@
                         }
                     }
                 }
-            }
-        }
-    },
-    "components": {
-        "schemas": {
-            "UserRegister": {
-                "type": "object",
-                "required": ["name", "username", "password"],
-                "properties": {
-                    "name": {
-                        "type": "string"
-                    },
-                    "username": {
-                        "type": "string"
-                    },
-                    "password": {
-                        "type": "string"
-                    }
-                }
             },
-            "UserLogin": {
-                "type": "object",
-                "required": ["username", "password"],
-                "properties": {
-                    "username": {
-                        "type": "string"
-                    },
-                    "password": {
-                        "type": "string"
-                    }
-                }
-            },
-            "ErrorResponse": {
-                "type": "object",
-                "properties": {
-                    "errors": {
-                        "type": "object",
-                        "properties": {
-                            "message": {
-                                "type": "string"
+            "patch": {
+                "operationId": "updateCurrentUser",
+                "summary": "Update profile user saat ini",
+                "description": "Memperbarui name, username, atau email user yang sedang login",
+                "tags": ["User"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateUserRequest"
                             }
                         }
                     }
-                }
-            },
-            "ValidationErrorResponse": {
-                "type": "object",
-                "properties": {
-                    "errors": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
+                },
+                "responses": {
+                    "200": {
+                        "description": "Profile berhasil diperbarui",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/UserResponse"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
                             }
                         }
                     }
