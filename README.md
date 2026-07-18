@@ -1,15 +1,29 @@
 # Todo RESTful API
 
-RESTful API sederhana untuk mengelola data Todo yang dibuat sebagai media pembelajaran mengenai:
+RESTful API sederhana untuk mengelola data Todo. Dibangun menggunakan Laravel sebagai media pembelajaran mengenai:
 
-- RESTful API
+- RESTful API Design
 - OpenAPI Specification (Swagger)
 - Authentication menggunakan Bearer Token
 - Request & Response Validation
 - HTTP Status Code
 - API Documentation
 
-API ini menyediakan fitur dasar seperti registrasi user, login, logout, mendapatkan data user yang sedang login, serta pembaruan profil user.
+## Fitur
+
+### User Management
+- Registrasi user baru
+- Login dengan username atau email
+- Logout (hapus token)
+- Lihat profil user saat ini
+- Update profil (name, username, email)
+
+### Todo Management
+- Buat todo baru
+- Lihat daftar todo milik user yang login
+- Lihat detail todo
+- Update todo (title, description, status selesai)
+- Hapus todo
 
 ## Tech Stack
 
@@ -32,20 +46,42 @@ API ini menyediakan fitur dasar seperti registrasi user, login, logout, mendapat
 | created_at | timestamp | |
 | updated_at | timestamp | |
 
+### Todos Table
+
+| Column | Type | Constraints |
+|---|---|---|
+| id | bigIncrements | Primary Key |
+| user_id | foreignId | `constrained()->cascadeOnDelete()` |
+| title | string | Required |
+| description | text | Nullable |
+| is_completed | boolean | Default `false` |
+| created_at | timestamp | |
+| updated_at | timestamp | |
+
+Relasi: Setiap todo dimiliki oleh satu user. Jika user dihapus, semua todo-nya ikut terhapus (`cascadeOnDelete`).
+
 ### Migrations
 
-- `0001_01_01_000000_create_users_table.php` — Users, password reset tokens, sessions
+| File | Deskripsi |
+|---|---|
+| `0001_01_01_000000_create_users_table.php` | Users, password reset tokens, sessions |
+| `0001_01_01_000003_create_todos_table.php` | Todos |
 
 ## API Documentation
 
 Dokumentasi lengkap (request/response schema) tersedia di:
 
-📄 [`docs/user-api.yaml`](docs/user-api.yaml)
+| File | Deskripsi |
+|---|---|
+| 📄 [`docs/user-api.yaml`](docs/user-api.yaml) | Dokumentasi API User |
+| 📄 [`docs/todo-api.yaml`](docs/todo-api.yaml) | Dokumentasi API Todo |
+| 📄 [`docs/user-api.json`](docs/user-api.json) | User API (JSON) |
+| 📄 [`docs/todolist-api.json`](docs/todolist-api.json) | Todo API (JSON) |
 
 Gunakan Swagger Editor atau Redoc untuk visualisasi:
 
-- [Swagger Editor](https://editor.swagger.io/) — Import file `docs/user-api.yaml`
-- [Redoc](https://redocly.github.io/redoc/) — Import file `docs/user-api.yaml`
+- [Swagger Editor](https://editor.swagger.io/) — Import file `.yaml` atau `.json`
+- [Redoc](https://redocly.github.io/redoc/) — Import file `.yaml` atau `.json`
 
 ## Endpoints
 
@@ -59,6 +95,16 @@ Gunakan Swagger Editor atau Redoc untuk visualisasi:
 | GET | `/api/users/current` | Bearer | Mendapatkan data user saat ini |
 | PATCH | `/api/users/current` | Bearer | Memperbarui profil (name, username, email) |
 
+### Todo
+
+| Method | Endpoint | Auth | Deskripsi |
+|---|---|---|---|
+| GET | `/api/todos` | Bearer | Mendapatkan daftar todo milik user |
+| POST | `/api/todos` | Bearer | Membuat todo baru |
+| GET | `/api/todos/{id}` | Bearer | Mendapatkan detail todo |
+| PATCH | `/api/todos/{id}` | Bearer | Memperbarui todo (title, description, is_completed) |
+| DELETE | `/api/todos/{id}` | Bearer | Menghapus todo |
+
 ### Login Flow
 
 Request `{ "login": "...", "password": "..." }`:
@@ -67,42 +113,79 @@ Request `{ "login": "...", "password": "..." }`:
 
 ## HTTP Status Code
 
-- **200 OK** — Request berhasil.
-- **201 Created** — Resource berhasil dibuat.
-- **400 Bad Request** — Request tidak valid atau validasi gagal.
-- **401 Unauthorized** — Token tidak ada/tidak valid, atau login gagal.
-- **404 Not Found** — Resource tidak ditemukan.
-- **500 Internal Server Error** — Terjadi kesalahan pada server.
+| Code | Deskripsi | Digunakan Pada |
+|---|---|---|
+| **200 OK** | Request berhasil | Login, logout, get/update user, list/detail/update/delete todo |
+| **201 Created** | Resource berhasil dibuat | Register user, create todo |
+| **400 Bad Request** | Validasi request gagal | Register, login, update user, create/update todo |
+| **401 Unauthorized** | Token tidak valid/kadaluarsa, atau login gagal | Logout, get/update user, semua endpoint todo |
+| **404 Not Found** | Resource tidak ditemukan | Get/update/delete todo (ID tidak valid) |
 
 ## Response Format
 
-### Success Response
+Semua response mengikuti format standar berikut:
+
+### Success dengan Object
 
 ```json
 {
-    "data": {}
-}
-```
-
-### Error Response
-
-```json
-{
-    "errors": {}
-}
-```
-
-### Validation Error Response
-
-```json
-{
-    "errors": {
-        "field": ["error message"]
+    "data": {
+        "id": 1,
+        "username": "jojobizarre",
+        "email": "jojo@example.com",
+        "name": "Jojo Bizarre",
+        "created_at": "2026-07-18T12:00:00Z",
+        "updated_at": "2026-07-18T12:00:00Z"
     }
 }
 ```
 
-### Unauthorized Response
+### Success dengan Array
+
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "title": "Belajar Laravel",
+            "is_completed": false
+        }
+    ]
+}
+```
+
+### Success dengan Message
+
+```json
+{
+    "data": {
+        "message": "Logout success"
+    }
+}
+```
+
+### Success Login
+
+```json
+{
+    "data": {
+        "token": "1|abc123def456..."
+    }
+}
+```
+
+### Validation Error
+
+```json
+{
+    "errors": {
+        "title": ["The title field is required."],
+        "email": ["The email must be a valid email address."]
+    }
+}
+```
+
+### Unauthorized / Not Found Error
 
 ```json
 {
@@ -112,7 +195,17 @@ Request `{ "login": "...", "password": "..." }`:
 }
 ```
 
+```json
+{
+    "errors": {
+        "message": "Todo not found"
+    }
+}
+```
+
 ## Authentication
+
+Semua endpoint kecuali `/api/register` dan `/api/login` memerlukan Bearer Token.
 
 ```http
 Authorization: Bearer <token>
